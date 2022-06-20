@@ -1,0 +1,66 @@
+name: photo_safe
+description: It is an application that allows you to store private medias like videos, gifs and images.
+
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+environment:
+  sdk: ">=2.17.3 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+  google_fonts: ^3.0.1
+  ionicons: ^0.1.2
+  flutter_iconly: ^1.0.2
+  hive: ^2.2.2
+  hive_flutter: ^1.1.0
+  path_provider: ^2.0.11
+  path: ^1.8.1
+  photo_view: ^0.14.0
+  carousel_slider: ^4.1.1
+  photo_manager: ^2.1.2
+  flutter_secure_storage: ^5.0.2
+  local_auth: ^2.1.0
+  percent_indicator: ^4.2.2
+  file_picker: ^3.0.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+  build_runner: ^2.1.11
+  hive_generator: ^1.1.3
+  flutter_launcher_icons: ^0.9.3
+  flutter_native_splash: ^2.2.3+1
+  rename: ^2.0.1
+
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: assets/company-blue.png
+
+flutter_icons:
+  ios: true
+  android: true
+  image_path_ios: "assets/icon/icon.png"
+  image_path_android: "assets/icon/icon.png"
+
+flutter:
+
+  uses-material-design: true
+
+  assets:
+    - assets/
+
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
+  #       - asset: fonts/Schyler-Italic.ttf
+  #         style: italic
+  #   - family: Trajan Pro
+  #     fonts:
+  #       - asset: fonts/TrajanPro.ttf
+  #       - asset: fonts/TrajanPro_Bold.ttf
+  #         weight: 700
+  
