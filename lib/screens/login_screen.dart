@@ -4,8 +4,8 @@ import 'package:flutter_iconly/flutter_iconly.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:photo_safe/animations/fade_route.dart';
-import 'package:photo_safe/screens/home_screen.dart';
-import 'package:photo_safe/services/storage_service.dart';
+import 'package:photo_safe/app.dart';
+import 'package:photo_safe/services/credential_storage_service.dart';
 
 class LoginScreen extends StatefulWidget {
 
@@ -43,14 +43,19 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _onPwdChanged() async {
     if(pwdController.text.length >= 4){
       if(widget.settings == null){
-        final int valid = await storageService.checkPwd(pwdController.text);
+
+        //DEBUG ONLY
+        // const int valid = 1;
+
+        final int valid = await credentialStorageService.checkPwd(pwdController.text);
+
         if(valid == 1){
           if(mounted){
-            Navigator.pushReplacement(context, FadeRoute(page: const HomeScreen(fake: false)));
+            Navigator.pushReplacement(context, FadeRoute(page: const App(fake: false)));
           }
         } else if(valid == 2){
           if(mounted){
-            Navigator.pushReplacement(context, FadeRoute(page: const HomeScreen(fake: true)));
+            Navigator.pushReplacement(context, FadeRoute(page: const App(fake: true)));
           }
         } else {
           HapticFeedback.heavyImpact();
@@ -69,9 +74,9 @@ class _LoginScreenState extends State<LoginScreen> {
           });
         } else {
           if(widget.settings == "fake"){
-            storageService.setFakePwd(firstSavePwd);
+            credentialStorageService.setFakePwd(firstSavePwd);
           } else {
-            storageService.setPwd(firstSavePwd);
+            credentialStorageService.setPwd(firstSavePwd);
           }
           Navigator.pop(context);
         }
@@ -140,7 +145,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     color: Theme.of(context).primaryColorLight,
                     borderRadius: BorderRadius.circular(18),
                   ),
-                  height: 50,
                   child: TextField(
                     readOnly: true,
                     textAlign: TextAlign.center,
@@ -370,7 +374,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ));
                           if(valid){
                             if(mounted){
-                              Navigator.pushReplacement(context, FadeRoute(page: const HomeScreen(fake: false)));
+                              Navigator.pushReplacement(context, FadeRoute(page: const App(fake: false)));
                             }
                           }
                         },

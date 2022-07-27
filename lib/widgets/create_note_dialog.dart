@@ -1,30 +1,30 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:photo_safe/models/folder.dart';
-import 'package:photo_safe/services/image_storage_service.dart';
+import 'package:photo_safe/models/note.dart';
+import 'package:photo_safe/services/note_storage_service.dart';
 
-class CreateFolderDialog {
+class CreateNoteDialog {
   
-  final TextEditingController folderNameController = TextEditingController();
-  final FocusNode folderNameFocusNode = FocusNode();
+  final TextEditingController noteTitleController = TextEditingController();
+  final FocusNode noteTitleFocusNode = FocusNode();
 
-  Future<void> _submitFolderName(BuildContext context,bool fake) async {
-    log("Submitting folder name...");
-    if(folderNameController.text != ""){
+  Future<void> _submitNoteTitle(BuildContext context,bool fake) async {
+    log("Submitting note title...");
+    if(noteTitleController.text != ""){
       if(!fake){
-        final Folder folderCreated = Folder(folderNameController.text,[]);
-        await imageStorageService.saveFolderInStorage(folderCreated);
+        final Note noteCreated = Note(noteTitleController.text,"",0xFFFFFFFF);
+        await noteStorageService.saveNoteInStorage(noteCreated);
       }
       Navigator.pop(context);
     } else {
-      log("Folder not created !");
+      log("Note not created !");
     }
   }
 
-  Future<void> showcreateFolderDialog(BuildContext context,bool fake) async {
+  Future<void> showCreateNoteDialog(BuildContext context,bool fake) async {
 
-    folderNameFocusNode.requestFocus();
+    noteTitleFocusNode.requestFocus();
 
     await showDialog(
       context: context,
@@ -44,7 +44,7 @@ class CreateFolderDialog {
             child: Column(
               children: [
                 const Padding(padding: EdgeInsets.symmetric(vertical: 5)),
-                Text("Créer un dossier", style: TextStyle(color: Theme.of(context).colorScheme.primary, fontSize: 20, fontWeight: FontWeight.bold)),
+                Text("Créer une note", style: TextStyle(color: Theme.of(context).colorScheme.primary, fontSize: 20, fontWeight: FontWeight.bold)),
                 const Padding(padding: EdgeInsets.symmetric(vertical: 5)),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -55,12 +55,12 @@ class CreateFolderDialog {
                       color: Theme.of(context).primaryColorLight,
                     ),
                     child: TextField(
-                      controller: folderNameController,
-                      focusNode: folderNameFocusNode,
+                      controller: noteTitleController,
+                      focusNode: noteTitleFocusNode,
                       style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
                       cursorColor: Theme.of(context).colorScheme.primary,
                       decoration: InputDecoration(
-                        hintText: "Nom",
+                        hintText: "Titre",
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(20),
                           borderSide: BorderSide(
@@ -81,7 +81,7 @@ class CreateFolderDialog {
                 GestureDetector(
                   onTap: () {
                     HapticFeedback.lightImpact();
-                    _submitFolderName(context,fake);
+                    _submitNoteTitle(context,fake);
                   },
                   child: Container(
                     decoration: BoxDecoration(

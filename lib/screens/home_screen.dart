@@ -8,8 +8,9 @@ import 'package:photo_safe/animations/slide_top_route.dart';
 import 'package:photo_safe/models/folder.dart';
 import 'package:photo_safe/screens/folder_screen.dart';
 import 'package:photo_safe/screens/setting_screen.dart';
-import 'package:photo_safe/services/storage_service.dart';
+import 'package:photo_safe/services/image_storage_service.dart';
 import 'package:photo_safe/widgets/create_folder_dialog.dart';
+import 'package:provider/provider.dart';
 
 class HomeScreen extends StatefulWidget {
 
@@ -23,6 +24,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
 
+  GlobalKey<NavigatorState>? mainNavigatorKey;
   final List<Folder> folders = [];
   bool deletingState = false;
 
@@ -30,6 +32,12 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     getAllFolders();
+  }
+
+  @override 
+  void didChangeDependencies(){
+    super.didChangeDependencies();
+    mainNavigatorKey = Provider.of<GlobalKey<NavigatorState>>(context);
   }
 
   @override
@@ -40,7 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> getAllFolders() async {
     if(!widget.fake){
       folders.clear();
-      final List<Folder> allFolders = await storageService.getAllFoldersInStorage();
+      final List<Folder> allFolders = await imageStorageService.getAllFoldersInStorage();
 
       setState(() {
         folders.addAll(allFolders);
@@ -65,7 +73,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: GestureDetector(
                       onTap: () {
                         HapticFeedback.lightImpact();
-                        Navigator.push(context, SlideTopRoute(page: const SettingScreen()));
+                        mainNavigatorKey!.currentState!.push(SlideTopRoute(page: const SettingScreen()));
                       },
                       child: Card(
                         elevation: 0,
@@ -100,7 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   child: GestureDetector(
                     onTap: () async {
                       HapticFeedback.lightImpact();
-                      await CreateFolderDialog().showUsernameDialog(context,widget.fake);
+                      await CreateFolderDialog().showcreateFolderDialog(context,widget.fake);
                       getAllFolders();
                     },
                     child: Card(
@@ -171,6 +179,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 10),
                             child: Row(
+                              mainAxisAlignment: MainAxisAlignment.start,
                               children: [
                                 Padding(
                                   padding: const EdgeInsets.only(left: 10),
@@ -188,18 +197,21 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                   ),
                                 ),
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 10),
-                                  child: Text(folder.name,style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold,fontSize: 14),textAlign: TextAlign.center),
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(left: 10,right: 10),
+                                    child: Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: Text(folder.name,style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold,fontSize: 14),textAlign: TextAlign.start)),
+                                  ),
                                 ),
-                                const Spacer(),
                                 Padding(
                                   padding: const EdgeInsets.only(right: 10),
                                   child: GestureDetector(
                                     onTap: () async {
                                       HapticFeedback.lightImpact();
                                       if(deletingState){
-                                        storageService.deleteFolderInStorage(folder);
+                                        imageStorageService.deleteFolderInStorage(folder);
                                         await getAllFolders();
                                         if(folders.isEmpty){
                                           setState(() {

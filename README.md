@@ -19,5 +19,7 @@ If you have ideas to improves the app, feel free to make a request.
         • Java version OpenJDK Runtime Environment (build 11.0.12+0-b1504.28-7817840)
 
 ## Version
+### [2.0.0] 
+Adding memo tab + Adding false code + Adding new assets + Refactoring app name + Major bug fixes and improvement + Securize date put in the app
 ### [1.0.0] 
 Initialization of the repository + base app

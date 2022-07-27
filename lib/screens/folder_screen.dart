@@ -5,13 +5,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_iconly/flutter_iconly.dart';
 import 'package:ionicons/ionicons.dart';
+import 'package:lottie/lottie.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:percent_indicator/percent_indicator.dart';
 import 'package:photo_safe/animations/swipe_back.dart';
 import 'package:photo_safe/models/folder.dart';
 import 'package:photo_safe/screens/image_full_screen.dart';
-import 'package:photo_safe/services/storage_service.dart';
+import 'package:photo_safe/services/image_storage_service.dart';
+import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart';
 
 class FolderScreen extends StatefulWidget {
 
@@ -23,8 +25,9 @@ class FolderScreen extends StatefulWidget {
   State<FolderScreen> createState() => _FolderScreenState();
 }
 
-class _FolderScreenState extends State<FolderScreen> {
+class _FolderScreenState extends State<FolderScreen> with TickerProviderStateMixin {
 
+  GlobalKey<NavigatorState>? mainNavigatorKey;
   final List<File> images = [];
   final List<bool> selectedImages = [];
   final List<String> selectedImagesPath = [];
@@ -32,15 +35,26 @@ class _FolderScreenState extends State<FolderScreen> {
   bool selectAllState = false;
   bool loadingPhotos = false;
   double percentageProgression = 0.0;
+  bool importingFile = false;
+  bool importingFileDone = false;
+  late final AnimationController lottieController;
 
   @override
   void initState() {
     super.initState();
+    lottieController = AnimationController(vsync: this);
     getAllImages();
+  }
+
+  @override 
+  void didChangeDependencies(){
+    super.didChangeDependencies();
+    mainNavigatorKey = Provider.of<GlobalKey<NavigatorState>>(this.context);
   }
 
   @override
   void dispose() {
+    lottieController.dispose();
     super.dispose();
   }
 
@@ -48,7 +62,7 @@ class _FolderScreenState extends State<FolderScreen> {
 
     images.clear();
     selectedImages.clear();
-    final List<String> allImages = await storageService.getAllImagesInFolderInStorage(widget.folder);
+    final List<String> allImages = await imageStorageService.getAllImagesInFolderInStorage(widget.folder);
     final List<File> imagesFile = [];
     for (final String image in allImages) {
       imagesFile.add(File(image));
@@ -69,22 +83,14 @@ class _FolderScreenState extends State<FolderScreen> {
       final String pathDirectory = (await getApplicationDocumentsDirectory()).path;
       final List<String> imagesPath = [];
       final List<String> nativeImagesPath = [];
-      final int totalImagesNumber = imagesFile.length;
-      int imagesCopiedNumber = 0;
       for(final File imageFile in imagesFile) {
         final String filename = basename(imageFile.path);
         final File localImage = await imageFile.copy('$pathDirectory/$filename');
         imagesPath.add(localImage.path);
         nativeImagesPath.add(imageFile.path);
-        imagesCopiedNumber += 1;
-        double finalPercentageProgression = (imagesCopiedNumber)/totalImagesNumber; 
-        setState(() {
-          percentageProgression = finalPercentageProgression;
-          log("Importation: ${(percentageProgression*100).toInt()}%");
-        });
       } 
       log("Adding image reference to folder local storage...");
-      await storageService.saveImagesInFolderInStorage(widget.folder, imagesPath);
+      await imageStorageService.saveImagesInFolderInStorage(widget.folder, imagesPath);
       log("All images added !");
     }
   }
@@ -158,6 +164,31 @@ class _FolderScreenState extends State<FolderScreen> {
                       ),
                     ),
                   ),
+                if(!deletingState)
+                  GestureDetector(
+                    onTap: () async {
+                      HapticFeedback.lightImpact();
+                      for (final File image in images) {
+                        selectedImagesPath.add(image.path);
+                      }
+                      if(selectedImagesPath.isNotEmpty){
+                        await Share.shareFiles(selectedImagesPath);
+                        selectedImagesPath.clear();
+                      }
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 5,bottom: 3),
+                      child: Card(
+                        elevation: 0,
+                        color: Theme.of(context).primaryColorLight,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
+                        child: Padding(
+                          padding: const EdgeInsets.all(8),
+                          child: Icon(Ionicons.share_outline, color: Theme.of(context).colorScheme.secondary,size: 24),
+                        ),
+                      ),
+                    ),
+                  ),
                 GestureDetector(
                   onTap: () async {
                     HapticFeedback.lightImpact();
@@ -187,54 +218,85 @@ class _FolderScreenState extends State<FolderScreen> {
           Center(
             child: Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 200),
-                  child: SizedBox(
-                    width: 150,
-                    height: 150,
-                    child: Image.asset("assets/image.png"),
+                if(importingFile)
+                  Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 150),
+                        child: Lottie.network("https://assets7.lottiefiles.com/packages/lf20_hao9inle.json"),
+                      ),
+                      Text("Importation des images en cours...",style: TextStyle(color: Theme.of(context).colorScheme.primary,fontSize: 17,fontWeight: FontWeight.bold)),
+                    ],
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 20),
-                  child: Text("Aucune image...  pour le moment!",style: TextStyle(color: Theme.of(context).colorScheme.primary,fontSize: 18,fontWeight: FontWeight.bold)),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 5),
-                  child: Text("Appuie sur + pour importer des images.",style: TextStyle(color: Theme.of(context).colorScheme.tertiary,fontSize: 15)),
-                )
+                if(importingFileDone)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 150),
+                    child: Lottie.network(
+                      "https://assets8.lottiefiles.com/packages/lf20_wkebwzpz.json",
+                      controller: lottieController,
+                      onLoaded: (composition) {
+                        lottieController.duration = composition.duration;
+                        lottieController.forward().whenComplete(() {
+                          setState(() {
+                            importingFileDone = false;
+                          });
+                        });
+                      },
+                    ),
+                  ),
+                if(!importingFile && !importingFileDone)
+                  Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 200),
+                        child: SizedBox(
+                          width: 150,
+                          height: 150,
+                          child: Image.asset("assets/image.png"),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 20),
+                        child: Text("Aucune image...  pour le moment!",style: TextStyle(color: Theme.of(context).colorScheme.primary,fontSize: 18,fontWeight: FontWeight.bold)),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 5),
+                        child: Text("Appuie sur + pour importer des images.",style: TextStyle(color: Theme.of(context).colorScheme.tertiary,fontSize: 15)),
+                      )
+                    ],
+                  ),
               ],
             ),
           ) 
         : Column(
           children: [
-            if(percentageProgression >= 0.00001)
-              GestureDetector(
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  setState(() {
-                    percentageProgression = 0.0;
-                  });
-                },
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10,vertical: 10),
-                      child: LinearPercentIndicator(
-                        lineHeight: 10.0,
-                        percent: percentageProgression,
-                        progressColor: Theme.of(context).colorScheme.secondary,
-                        backgroundColor: Theme.of(context).primaryColorLight,
-                        barRadius: const Radius.circular(4),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 15),
-                      child: Text("Importation des images en cours...",style: TextStyle(color: Theme.of(context).colorScheme.primary,fontSize: 15,fontWeight: FontWeight.bold)),
-                    ),
-                  ],
+            if(importingFile)
+              Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 150),
+                    child: Lottie.network("https://assets7.lottiefiles.com/packages/lf20_hao9inle.json"),
+                  ),
+                  Text("Importation des images en cours...",style: TextStyle(color: Theme.of(context).colorScheme.primary,fontSize: 17,fontWeight: FontWeight.bold)),
+                ],
+              ),
+            if(importingFileDone)
+              Padding(
+                padding: const EdgeInsets.only(top: 150),
+                child: Lottie.network(
+                  "https://assets8.lottiefiles.com/packages/lf20_wkebwzpz.json",
+                  controller: lottieController,
+                  onLoaded: (composition) {
+                    lottieController.duration = composition.duration;
+                    lottieController.forward().whenComplete(() {
+                      setState(() {
+                        importingFileDone = false;
+                      });
+                    });
+                  },
                 ),
               ),
+            if(!importingFile && !importingFileDone)
             Expanded(
               child: GridView.builder(
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 4),
@@ -259,7 +321,7 @@ class _FolderScreenState extends State<FolderScreen> {
                           selectedImages[index] = !selectedImages[index];
                         });
                       } else {
-                        Navigator.push(context,
+                        mainNavigatorKey!.currentState!.push(
                           PageRouteBuilder<void>(
                             pageBuilder: (BuildContext context, Animation<double> animation, Animation<double> secondaryAnimation) {
                               return AnimatedBuilder(
@@ -315,11 +377,19 @@ class _FolderScreenState extends State<FolderScreen> {
           onTap: () async {
             HapticFeedback.lightImpact();
             if(!deletingState){
+              setState(() {
+                importingFile = true;
+              });
               await importImages();
+              setState(() {
+                lottieController.reset();
+                importingFile = false;
+                importingFileDone = true;
+              });
               getAllImages();
             } else {
               if(selectedImagesPath.isNotEmpty){
-                await storageService.deleteSelectedFolderImageInStorage(widget.folder,selectedImagesPath);
+                await imageStorageService.deleteSelectedFolderImageInStorage(widget.folder,selectedImagesPath);
                 await getAllImages();
                 if(images.isEmpty){
                   setState(() {

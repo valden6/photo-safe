@@ -8,7 +8,7 @@ class Folder {
   @HiveField(0)
   final String name;
   @HiveField(1)
-  final List<String> imagesPath;
+  List<String> imagesPath;
 
   Folder(this.name, this.imagesPath);
   
